@@ -1,0 +1,129 @@
+{
+  "theme": "light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "emotion": "Objective, rigid, authoritative, and functional",
+  "typography": {
+    "fonts": {
+      "heading": "Outfit, sans-serif",
+      "body": "IBM Plex Sans, sans-serif"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl tracking-tight font-bold",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-sm sm:text-base leading-relaxed",
+      "small": "text-xs uppercase tracking-[0.2em]"
+    },
+    "rules": [
+      "NEVER use generic fonts (Inter, Roboto) for headings.",
+      "Overlines must be Uppercase + Tiny + Wide Spacing (tracking-[0.2em]).",
+      "Ensure minimum 4.5:1 contrast for text."
+    ]
+  },
+  "colors": {
+    "background": {
+      "primary": "#FFFFFF",
+      "secondary": "#F8FAFC",
+      "tertiary": "#F1F5F9"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "muted": "#64748B"
+    },
+    "border": {
+      "default": "#E2E8F0",
+      "focus": "#1E3A8A"
+    },
+    "accent": {
+      "primary": "#1E3A8A",
+      "primary_hover": "#1E40AF",
+      "danger": "#EF4444",
+      "warning": "#F59E0B",
+      "success": "#10B981"
+    },
+    "rules": [
+      "Never use pure black or grey; always use slate (blue-tinted grey).",
+      "Color is for function only. 95% of UI is monochrome.",
+      "Ensure buttons have explicit hover colors (e.g., hover:bg-blue-800 hover:text-white)."
+    ]
+  },
+  "layout": {
+    "spacing_system": "Generous spacing philosophy but dense for data grids (p-4 to p-6 inside cards). Standardize on Tailwind scale.",
+    "grid_strategy": "Control Room Grid (Dashboard mode)",
+    "rules": [
+      "Base dashboard grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with gap-6.",
+      "Containers with borders MUST have internal padding.",
+      "Use Optical Alignment.",
+      "Grid children must be direct children. Avoid wrapping items unnecessarily."
+    ]
+  },
+  "components": {
+    "header": {
+      "style": "Solid Background with a hard bottom border (border-b border-slate-200). Never transparent.",
+      "behavior": "Sticky z-50 with solid background to prevent data refraction."
+    },
+    "cards": {
+      "style": "Flat background, 1px subtle border (border-slate-200), NO SHADOW by default.",
+      "hover_state": "Slight lift (-translate-y-1) and subtle shadow (shadow-lg) with border darkening."
+    },
+    "data_tables": {
+      "style": "Compact, zebra striping optional, horizontal and vertical scrolling with fixed headers. Border-collapse.",
+      "interaction": "Inline actions, sticky first column, hover row highlight (hover:bg-slate-50)."
+    },
+    "forms": {
+      "style": "Shadcn based. Inputs with sharp borders, subtle focus rings (focus:ring-2 focus:ring-blue-800/20)."
+    },
+    "icons": {
+      "library": "@phosphor-icons/react",
+      "usage": "Use for dense dashboards. Weight: regular or bold depending on emphasis."
+    }
+  },
+  "media": {
+    "images": [
+      {
+        "category": "logo",
+        "url": "https://static.prod-images.emergentagent.com/jobs/3021b1c0-6b7e-4ecf-bb00-506131f4717a/images/2079f87495b1e57ed93da4cce33912837657086bb48301e9915026f7412cdf63.png",
+        "description": "Raffles University minimal blue crest logo. Use in Header and Auth Screens.",
+        "usage_instructions": "Place in top-left navigation. Max height: 40px."
+      },
+      {
+        "category": "auth_background",
+        "url": "https://static.prod-images.emergentagent.com/jobs/3021b1c0-6b7e-4ecf-bb00-506131f4717a/images/3d6a8a6999104700e215ca3f2eed6b0a37e26332bda727c75333bdf27633101d.png",
+        "description": "Abstract minimalist background for login page.",
+        "usage_instructions": "Use as a full-bleed cover image on the left/right split panel of the authentication view."
+      },
+      {
+        "category": "campus_hero",
+        "url": "https://images.unsplash.com/photo-1651847162993-e7d4fe011eee?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjB1bml2ZXJzaXR5JTIwY2FtcHVzJTIwYXJjaGl0ZWN0dXJlfGVufDB8fHx8MTc3NTQ3NTU1OHww&ixlib=rb-4.1.0&q=85",
+        "description": "Modern university campus building.",
+        "usage_instructions": "Can be used as a banner image in the student or admission portals."
+      },
+      {
+        "category": "student_avatars",
+        "url": "https://images.unsplash.com/photo-1731027488418-ef5a05b2d71b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwzfHxkaXZlcnNlJTIwdW5pdmVyc2l0eSUyMHN0dWRlbnQlMjBwb3J0cmFpdHN8ZW58MHx8fHwxNzc1NDc1NTU5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Diverse university student portraits.",
+        "usage_instructions": "Use for placeholder profile images in the CRM."
+      }
+    ],
+    "rules": [
+      "Never use placeholder image services (via.placeholder.com etc). Use ONLY the URLs provided above.",
+      "Images should use max-h-[80vh] md:max-h-none on mobile."
+    ]
+  },
+  "motion_and_interaction": {
+    "hover": "All interactive elements MUST have explicitly defined hover text and background colors.",
+    "transitions": "Use specific properties (transition: transform 0.2s ease, opacity 0.2s ease). Exclude generic 'all'.",
+    "accessibility": "Must respect prefers-reduced-motion. Add data-testid to all interactive components."
+  },
+  "instructions_to_main_agent": [
+    "Install Google Fonts in index.html or global CSS: Outfit and IBM Plex Sans.",
+    "Use @phosphor-icons/react for all icons.",
+    "Implement the 'Control Room Grid' for the main dashboard: dense, highly functional.",
+    "Ensure the header uses solid background (no glassmorphism) for data clarity.",
+    "Apply data-testid attributes extensively for testability.",
+    "Tables should handle complex data: use Shadcn Table with fixed headers and dense row styling.",
+    "Adhere strictly to the color palette: mostly monochrome slate, with specific semantic accents."
+  ]
+}

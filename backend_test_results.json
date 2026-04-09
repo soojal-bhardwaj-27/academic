@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-04-06T12:24:38.176521",
+  "total_tests": 17,
+  "passed_tests": 17,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "test": "Admin Login",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/auth/login"
+    },
+    {
+      "test": "Get Current User",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/auth/me"
+    },
+    {
+      "test": "Dashboard Stats",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/dashboard/stats"
+    },
+    {
+      "test": "Get Departments",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/departments"
+    },
+    {
+      "test": "Create Department",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/departments"
+    },
+    {
+      "test": "Get Programs",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/programs"
+    },
+    {
+      "test": "Create Program",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/programs"
+    },
+    {
+      "test": "Get Students",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/students"
+    },
+    {
+      "test": "Create Student",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/students"
+    },
+    {
+      "test": "Get Subjects",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/subjects"
+    },
+    {
+      "test": "Create Subject",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/subjects"
+    },
+    {
+      "test": "Get Timetable",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/timetable"
+    },
+    {
+      "test": "Get Attendance",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/attendance"
+    },
+    {
+      "test": "Get Batches",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/batches"
+    },
+    {
+      "test": "Get Users",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/users"
+    },
+    {
+      "test": "Get Electives",
+      "success": true,
+      "details": "",
+      "endpoint": "GET /api/electives"
+    },
+    {
+      "test": "Logout",
+      "success": true,
+      "details": "",
+      "endpoint": "POST /api/auth/logout"
+    }
+  ]
+}
