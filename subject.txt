@@ -1,0 +1,112 @@
+Total Subjects across all Courses: 7
+Total Courses: 25
+==================================================
+
+Course (Program): BA LLB
+------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): BBA LLB
+-------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): LLB.
+----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): LLM
+---------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): DIPLOMA
+-------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): BCA
+---------------------
+  Semester 1:
+    - [CF101] Computer Fundamental (core, 6.0 Credits)
+    - [PC201] Programming in C (core, 6.0 Credits)
+
+Course (Program): B.TECH
+------------------------
+  Semester 1:
+    - [MA101] Mathematics I (Core, 3.0 Credits)
+    - [CS101] Programming in C (Core, 4.0 Credits)
+    - [ME101] Engineering Graphics (Lab, 2.0 Credits)
+  Semester 3:
+    - [CS201] Data Structures (Core, 4.0 Credits)
+    - [CS205] Introduction to AI (Elective, 3.0 Credits)
+
+Course (Program): MCA
+---------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): M.TECH
+------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.SC
+----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): M.SC
+----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.SC (AGRICULTURE)
+------------------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.COM
+-----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): BBA.
+----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): M.COM
+-----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): MBA
+---------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): D.PHARM
+-------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.PHARM
+-------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): M.PHARM
+-------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.A (HONS)
+----------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): B.A (GEN)
+---------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): M.A.
+----------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): Certificate in Legal Studies
+----------------------------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): PG Diploma in AI
+----------------------------------
+  (No subjects mapped to this course yet)
+
+Course (Program): Ph.D in Management
+------------------------------------
+  (No subjects mapped to this course yet)
+

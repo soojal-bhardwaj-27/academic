@@ -10,6 +10,53 @@ const api = axios.create({
   }
 });
 
+// ── Auto-refresh interceptor ──────────────────────────────────────────────
+// When any request gets a 401, attempt to refresh the access_token cookie
+// silently using the refresh_token cookie, then retry the original request.
+let _refreshing = false;
+let _refreshQueue = [];
+
+const processQueue = (error) => {
+  _refreshQueue.forEach(({ resolve, reject }) => error ? reject(error) : resolve());
+  _refreshQueue = [];
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    const is401 = error.response?.status === 401;
+    const isRefreshCall = original.url?.includes('/auth/refresh');
+    const isLoginCall = original.url?.includes('/auth/login');
+
+    if (is401 && !original._retry && !isRefreshCall && !isLoginCall) {
+      original._retry = true;
+
+      if (_refreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve, reject) => {
+          _refreshQueue.push({ resolve, reject });
+        }).then(() => api(original)).catch((e) => Promise.reject(e));
+      }
+
+      _refreshing = true;
+      try {
+        await axios.post(`${API_URL}/api/auth/refresh`, {}, { withCredentials: true });
+        processQueue(null);
+        return api(original); // retry original request
+      } catch (refreshError) {
+        processQueue(refreshError);
+        // Refresh token also expired → force re-login
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        _refreshing = false;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Helper to format error messages
 export const formatApiError = (error) => {
   const detail = error?.response?.data?.detail;
@@ -112,7 +159,19 @@ export const userApi = {
 
 // Dashboard
 export const dashboardApi = {
-  getStats: () => api.get('/dashboard/stats')
+  getStats: () => api.get('/dashboard/stats'),
+  getHierarchy: () => api.get('/dashboard/hierarchy'),
 };
+
+// Simple in-memory cache for stable/rarely-changing data
+const _cache = {};
+export const cachedGet = async (key, apiFn, ttlMs = 60_000) => {
+  const hit = _cache[key];
+  if (hit && Date.now() - hit.ts < ttlMs) return hit.data;
+  const data = await apiFn();
+  _cache[key] = { data, ts: Date.now() };
+  return data;
+};
+export const clearCache = (key) => { if (key) delete _cache[key]; else Object.keys(_cache).forEach(k => delete _cache[k]); };
 
 export default api;

@@ -17,7 +17,9 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 import io
 import csv
+import asyncio
 from openpyxl import load_workbook
+from email_service import send_enrollment_welcome_email
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -470,6 +472,32 @@ async def logout(response: Response):
 async def get_me(user: dict = Depends(get_current_user)):
     return user
 
+@api_router.post("/auth/refresh")
+async def refresh_token(request: Request, response: Response):
+    """Issue a new access_token using a valid refresh_token cookie."""
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user_id = payload["sub"]
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        new_access = create_access_token(user_id, user["email"], user["role"])
+        response.set_cookie(
+            key="access_token", value=new_access,
+            httponly=True, secure=False, samesite="lax",
+            max_age=86400, path="/"
+        )
+        return {"message": "Token refreshed"}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired — please log in again")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
 # ==================== DEPARTMENT ENDPOINTS ====================
 @api_router.post("/departments", response_model=DepartmentResponse)
 async def create_department(dept: DepartmentCreate, user: dict = Depends(require_roles(["admin", "dean"]))):
@@ -539,13 +567,18 @@ async def get_students(
         ]
         
     students = await db.students.find(query).sort("created_at", -1).to_list(1000)
-    
-    # Add names
+
+    # ── Batch-resolve program & department names (eliminates N+1) ──────────
+    program_ids = {ObjectId(s["program_id"]) for s in students if s.get("program_id") and ObjectId.is_valid(s["program_id"])}
+    dept_ids    = {ObjectId(s["department_id"]) for s in students if s.get("department_id") and ObjectId.is_valid(s["department_id"])}
+
+    prog_map = {str(p["_id"]): p async for p in db.programs.find({"_id": {"$in": list(program_ids)}})}
+    dept_map = {str(d["_id"]): d async for d in db.departments.find({"_id": {"$in": list(dept_ids)}})}
+
     result = []
     for s in students:
-        prog = await db.programs.find_one({"_id": ObjectId(s["program_id"]) if ObjectId.is_valid(s["program_id"]) else s["program_id"]})
-        dept = await db.departments.find_one({"_id": ObjectId(s["department_id"]) if ObjectId.is_valid(s["department_id"]) else s["department_id"]})
-        
+        prog = prog_map.get(s.get("program_id", ""))
+        dept = dept_map.get(s.get("department_id", ""))
         result.append(StudentResponse(
             id=str(s["_id"]),
             student_id=s["student_id"],
@@ -685,6 +718,7 @@ async def create_student(student: StudentCreate, user: dict = Depends(require_ro
         "name": student.name,
         "enrollment_number": student.enrollment_number,
         "email": student.email.lower(),
+        "mobile_number": student.mobile_number,
         "program_id": student.program_id,
         "department_id": prog["department_id"],
         "academic_session": student.academic_session,
@@ -694,13 +728,26 @@ async def create_student(student: StudentCreate, user: dict = Depends(require_ro
         "created_at": datetime.now(timezone.utc)
     }
     result = await db.students.insert_one(doc)
-    
+
+    # ── Fire welcome email (non-blocking, errors are logged not raised) ──
+    asyncio.create_task(send_enrollment_welcome_email(
+        to_email=student.email,
+        student_name=student.name,
+        student_id=student_id,
+        program_name=prog["name"],
+        semester=student.semester,
+        enrollment_number=student.enrollment_number,
+        academic_session=student.academic_session,
+        department_name=dept["name"] if dept else "",
+    ))
+
     return StudentResponse(
         id=str(result.inserted_id),
         student_id=student_id,
         name=student.name,
         enrollment_number=student.enrollment_number,
         email=student.email,
+        mobile_number=student.mobile_number,
         program_id=student.program_id,
         program_name=prog["name"],
         department_id=prog["department_id"],
@@ -751,30 +798,58 @@ async def bulk_import_students(file: UploadFile = File(...), user: dict = Depend
     imported = 0
     errors = []
     
+    # 1. Pre-fetch all programs
+    all_progs = await db.programs.find().to_list(1000)
+    prog_map = {p["code"].upper(): p for p in all_progs}
+    
+    # 2. Extract all incoming enrollments to check duplicates efficiently
+    incoming_enrollments = []
+    for row in rows:
+        enh = str(row.get("enrollment_number", row.get("enrollment", ""))).strip()
+        if enh: incoming_enrollments.append(enh)
+    
+    # Pre-fetch existing students to easily do duplicate checks
+    existing_students = await db.students.find({"enrollment_number": {"$in": incoming_enrollments}}).to_list(None)
+    existing_enrollments = {s["enrollment_number"] for s in existing_students}
+    
+    # 3. Maintain a local counter for student IDs
+    session_prog_counts = {}
+    docs_to_insert = []
+    
     for row_idx, row in enumerate(rows):
         try:
-            program_code = row.get("program_code", row.get("program", "")).strip()
-            prog = await db.programs.find_one({"code": program_code.upper()})
+            program_code = str(row.get("program_code", row.get("program", ""))).strip().upper()
+            prog = prog_map.get(program_code)
             if not prog:
                 errors.append(f"Row {row_idx + 2}: Program not found - {program_code}")
                 continue
             
-            enrollment = row.get("enrollment_number", row.get("enrollment", "")).strip()
+            enrollment = str(row.get("enrollment_number", row.get("enrollment", ""))).strip()
             if not enrollment:
                 errors.append(f"Row {row_idx + 2}: Missing enrollment number")
                 continue
                 
-            existing = await db.students.find_one({"enrollment_number": enrollment})
-            if existing:
+            if enrollment in existing_enrollments:
                 errors.append(f"Row {row_idx + 2}: Enrollment number already exists - {enrollment}")
                 continue
             
-            session = row.get("academic_session", row.get("session", "2025-2029")).strip()
-            count = await db.students.count_documents({"program_id": str(prog["_id"]), "academic_session": session})
-            student_id = generate_student_id(prog["code"], session, count + 1)
+            # Add to local map to prevent duplicates inside the uploaded file itself
+            existing_enrollments.add(enrollment)
             
-            name = row.get("name", row.get("student_name", "")).strip()
-            email = row.get("email", row.get("student_email", "")).strip().lower()
+            session = str(row.get("academic_session", row.get("session", "2025-2029"))).strip()
+            
+            prog_id_str = str(prog["_id"])
+            count_key = f"{prog_id_str}_{session}"
+            if count_key not in session_prog_counts:
+                # Only hit the DB once per program-session combination
+                count_docs = await db.students.count_documents({"program_id": prog_id_str, "academic_session": session})
+                session_prog_counts[count_key] = count_docs
+                
+            session_prog_counts[count_key] += 1
+            student_id = generate_student_id(prog["code"], session, session_prog_counts[count_key])
+            
+            name = str(row.get("name", row.get("student_name", ""))).strip()
+            email = str(row.get("email", row.get("student_email", ""))).strip().lower()
             
             if not name:
                 errors.append(f"Row {row_idx + 2}: Missing student name")
@@ -786,18 +861,21 @@ async def bulk_import_students(file: UploadFile = File(...), user: dict = Depend
                 "enrollment_number": enrollment,
                 "email": email or f"{enrollment.lower()}@raffles.edu.in",
                 "mobile_number": str(row.get("mobile_number", row.get("mobile", row.get("phone", "")))).strip() or None,
-                "program_id": str(prog["_id"]),
+                "program_id": prog_id_str,
                 "department_id": prog["department_id"],
                 "academic_session": session,
-                "category": row.get("category", "").strip() or None,
+                "category": str(row.get("category", "")).strip() or None,
                 "semester": int(row.get("semester", 1) or 1),
                 "user_id": None,
                 "created_at": datetime.now(timezone.utc)
             }
-            await db.students.insert_one(doc)
+            docs_to_insert.append(doc)
             imported += 1
         except Exception as e:
             errors.append(f"Row {row_idx + 2}: {str(e)}")
+            
+    if docs_to_insert:
+        await db.students.insert_many(docs_to_insert)
     
     return {"imported": imported, "errors": errors, "total_rows": len(rows)}
 
@@ -1731,22 +1809,19 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
     if user["role"] not in GLOBAL_ROLES and user["role"] != "student":
         if user.get("department_id"):
             query["department_id"] = user["department_id"]
-            
-    # For stats that depend on departments, we filter those collections
-    total_students = await db.students.count_documents(query)
-    total_departments = await db.departments.count_documents(query)
-    total_programs = await db.programs.count_documents(query)
-    
-    # Faculty are users with the faculty role in that department
+
     faculty_query = {"role": "faculty"}
     if user["role"] not in GLOBAL_ROLES and user["role"] != "student" and user.get("department_id"):
         faculty_query["department_id"] = user["department_id"]
-    total_faculty = await db.users.count_documents(faculty_query)
-    
-    # Subjects are linked to programs which are linked to departments
-    # For now, if filtered, we find objects linked indirectly or just return total for global
-    total_subjects = await db.subjects.count_documents({}) # Subject isolation can be added similarly
-    
+
+    total_students, total_departments, total_programs, total_faculty, total_subjects = await asyncio.gather(
+        db.students.count_documents(query),
+        db.departments.count_documents(query),
+        db.programs.count_documents(query),
+        db.users.count_documents(faculty_query),
+        db.subjects.count_documents({}),
+    )
+
     return {
         "total_students": total_students,
         "total_faculty": total_faculty,
@@ -1754,6 +1829,46 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         "total_programs": total_programs,
         "total_subjects": total_subjects
     }
+
+@api_router.get("/dashboard/hierarchy")
+async def get_dashboard_hierarchy(user: dict = Depends(get_current_user)):
+    """
+    Returns departments with their programs and student counts.
+    Uses a single $group aggregation — much faster than fetching all students.
+    """
+    # 1. Count students per program_id in one aggregation query
+    pipeline = [{"$group": {"_id": "$program_id", "count": {"$sum": 1}}}]
+    counts_cursor = db.students.aggregate(pipeline)
+    student_counts = {doc["_id"]: doc["count"] async for doc in counts_cursor}
+
+    # 2. Fetch departments & programs in parallel (2 queries total)
+    depts_raw, progs_raw = await asyncio.gather(
+        db.departments.find({}).to_list(100),
+        db.programs.find({}).to_list(500),
+    )
+
+    # 3. Group programs by department
+    programs_by_dept = {}
+    for p in progs_raw:
+        did = str(p.get("department_id", ""))
+        programs_by_dept.setdefault(did, []).append({
+            "id": str(p["_id"]),
+            "name": p["name"],
+            "code": p["code"],
+            "student_count": student_counts.get(str(p["_id"]), 0)
+        })
+
+    # 4. Build response
+    result = []
+    for d in depts_raw:
+        did = str(d["_id"])
+        result.append({
+            "id": did,
+            "name": d["name"],
+            "code": d["code"],
+            "programs": programs_by_dept.get(did, [])
+        })
+    return result
 
 # ==================== STARTUP ====================
 @app.on_event("startup")
