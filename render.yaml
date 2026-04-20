@@ -1,0 +1,22 @@
+services:
+  # The PostgreSQL Database
+  - type: psql
+    name: academic_db
+    plan: free # Use the free tier
+    databaseName: academic_db
+    user: admin
+
+  # The FastAPI Backend
+  - type: web
+    name: academic-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT --app-dir backend
+    plan: free # Use the free tier
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: academic_db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.10.0

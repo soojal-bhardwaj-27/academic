@@ -8,6 +8,12 @@ load_dotenv()
 # Example: postgresql+asyncpg://user:password@localhost:5433/academic_db
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:admin123@localhost:5433/academic_db")
 
+# Automatically fix DB URL for Render deployment and SQLAlchemy asyncpg
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 AsyncSessionLocal = sessionmaker(
