@@ -4,6 +4,7 @@ load_dotenv()
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File, Header
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+import certifi
 from bson import ObjectId
 import os
 import logging
@@ -29,10 +30,14 @@ logger = logging.getLogger(__name__)
 mongo_url = os.environ.get('MONGO_URL')
 if not mongo_url:
     logger.error("MONGO_URL environment variable is NOT set!")
-    # We allow it to continue so we can actually see the log in Render
     db = None
 else:
-    client = AsyncIOMotorClient(mongo_url)
+    # Added tlsAllowInvalidCertificates and certifi to fix SSL/TLS handshake issues on Render
+    client = AsyncIOMotorClient(
+        mongo_url, 
+        tlsCAFile=certifi.where(),
+        tlsAllowInvalidCertificates=True
+    )
     db_name = os.environ.get('DB_NAME', 'academic_crm')
     db = client[db_name]
     logger.info(f"Connected to MongoDB: {db_name}")
