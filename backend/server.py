@@ -32,15 +32,15 @@ if not mongo_url:
     logger.error("MONGO_URL environment variable is NOT set!")
     db = None
 else:
-    # Added tlsAllowInvalidCertificates and certifi to fix SSL/TLS handshake issues on Render
+    # Simplified connection for Atlas - strictly using certifi for security
     client = AsyncIOMotorClient(
         mongo_url, 
         tlsCAFile=certifi.where(),
-        tlsAllowInvalidCertificates=True
+        serverSelectionTimeoutMS=5000
     )
     db_name = os.environ.get('DB_NAME', 'academic_crm')
     db = client[db_name]
-    logger.info(f"Connected to MongoDB: {db_name}")
+    logger.info(f"Connecting to MongoDB: {db_name}")
 
 # JWT Config
 JWT_ALGORITHM = "HS256"
