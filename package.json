@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "build": "cd frontend && yarn install && CI=false yarn build",
+    "install": "cd frontend && yarn install",
+    "start": "cd frontend && yarn start"
+  },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "lucide-react": "^1.7.0"
