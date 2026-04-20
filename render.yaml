@@ -1,11 +1,4 @@
 services:
-  # The PostgreSQL Database
-  - type: psql
-    name: academic_db
-    plan: free # Use the free tier
-    databaseName: academic_db
-    user: admin
-
   # The FastAPI Backend
   - type: web
     name: academic-backend
@@ -14,9 +7,11 @@ services:
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT --app-dir backend
     plan: free # Use the free tier
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: academic_db
-          property: connectionString
+      - key: MONGO_URL
+        sync: false # You will paste your MongoDB Atlas URL here in the Render Dashboard
+      - key: DB_NAME
+        value: academic_crm
+      - key: JWT_SECRET
+        generateValue: true
       - key: PYTHON_VERSION
         value: 3.10.0
