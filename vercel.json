@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd frontend && yarn install && CI=false yarn build",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
