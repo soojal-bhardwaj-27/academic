@@ -26,9 +26,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+mongo_url = os.environ.get('MONGO_URL')
+if not mongo_url:
+    logger.error("MONGO_URL environment variable is NOT set!")
+    # We allow it to continue so we can actually see the log in Render
+    db = None
+else:
+    client = AsyncIOMotorClient(mongo_url)
+    db_name = os.environ.get('DB_NAME', 'academic_crm')
+    db = client[db_name]
+    logger.info(f"Connected to MongoDB: {db_name}")
 
 # JWT Config
 JWT_ALGORITHM = "HS256"
