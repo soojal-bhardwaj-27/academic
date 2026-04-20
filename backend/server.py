@@ -46,9 +46,24 @@ else:
 JWT_ALGORITHM = "HS256"
 JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
 
-# Create the main app
 app = FastAPI(title="Raffles University Academic CRM")
 api_router = APIRouter()
+
+# CORS Middleware configuration
+# We allow localhost for development and the Vercel domain for production
+origins = [
+    "http://localhost:3000",
+    "https://academic-six.vercel.app",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex="https://academic-.*\\.vercel\\.app", # Support for Vercel preview branches
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
@@ -450,8 +465,8 @@ async def register(user_data: UserCreate, response: Response):
     access_token = create_access_token(user_id, email, user_data.role.value)
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=86400, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=86400, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     
     return {"id": user_id, "email": email, "name": user_data.name, "role": user_data.role.value}
 
@@ -469,8 +484,8 @@ async def login(user_data: UserLogin, response: Response):
     access_token = create_access_token(user_id, email, user["role"])
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=86400, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=86400, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     
     return {"id": user_id, "email": user["email"], "name": user["name"], "role": user["role"]}
 
@@ -501,7 +516,7 @@ async def refresh_token(request: Request, response: Response):
         new_access = create_access_token(user_id, user["email"], user["role"])
         response.set_cookie(
             key="access_token", value=new_access,
-            httponly=True, secure=False, samesite="lax",
+            httponly=True, secure=True, samesite="none",
             max_age=86400, path="/"
         )
         return {"message": "Token refreshed"}
